@@ -1,6 +1,7 @@
 #include "Server.h"
 
-Server::Server(int maxParWorkers, int maxBacklog, unsigned short port) {
+Server::Server(string workingDirectory, int maxParWorkers, int maxBacklog, unsigned short port) {
+	this->workingDirectory = workingDirectory;
 	this->maxParWorkers = maxParWorkers;
 	this->maxBacklog = maxBacklog;
 	this->port = port;
@@ -12,7 +13,7 @@ Server::~Server() {
 }
 
 int Server::init() {
-
+	chdir(workingDirectory.c_str());
 	struct addrinfo hints;
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -31,12 +32,14 @@ int Server::init() {
 	struct addrinfo *p;
 	int yes = 1;
 	for (p = servinfo; p != NULL; p = p->ai_next) {
-		if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol))
+				== -1) {
 			perror("server: socket");
 			continue;
 		}
 
-		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))
+				== -1) {
 			perror("setsockopt");
 			exit(1);
 		}
@@ -64,16 +67,16 @@ int Server::init() {
 }
 
 bool Server::canCreateNewWorker() {
-	for(vector<Thread*>::iterator it = threads.begin(); it != threads.end();) {
+	for (vector<Thread*>::iterator it = threads.begin(); it != threads.end();) {
 		Thread* t = *it;
-		if(t->isDone()) {
+		if (t->isDone()) {
 			it = threads.erase(it);
 			delete t;
 		} else {
 			it++;
 		}
 	}
-	return threads.size() < maxParWorkers ? true : false;
+	return threads.size() < maxParWorkers;
 }
 
 void Server::run() {
@@ -85,16 +88,17 @@ void Server::run() {
 
 		struct sockaddr_storage their_addr;
 		socklen_t sin_size = sizeof(sockaddr_storage);
-		int incoming_socket_fd = accept(socket_fd, (struct sockaddr *) &their_addr, &sin_size);
+		int incoming_socket_fd = accept(socket_fd,
+				(struct sockaddr *) &their_addr, &sin_size);
 
 		if (incoming_socket_fd == -1) {
 			perror("accept");
 			continue;
 		}
 
-		Thread* worker = new HttpHandler(new SocketHandler(incoming_socket_fd));
+		Thread* worker = new HttpHandler(new SocketHandler(incoming_socket_fd), new FileSystemHandler(workingDirectory));
 
-		if(worker->start()) {
+		if (worker->start()) {
 			threads.push_back(worker);
 		} else {
 			delete worker;

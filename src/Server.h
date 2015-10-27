@@ -19,7 +19,7 @@ using namespace std;
 
 class Server {
 	public:
-		Server(int maxParWorkers, int maxBacklog, unsigned short port);
+		Server(string workingDirectory, int maxParWorkers, int maxBacklog, unsigned short port);
 		~Server();
 		int init();
 		void run();
@@ -27,10 +27,10 @@ class Server {
 	private:
 		vector<Thread*> threads;
 		int socket_fd;
-		int maxParWorkers;
-		int maxBacklog;
+		unsigned int maxParWorkers;
+		unsigned int maxBacklog;
 		unsigned short port;
-
+		string workingDirectory;
 		bool canCreateNewWorker();
 };
 
