@@ -32,19 +32,24 @@ void HttpHandler::run() {
 void HttpHandler::handleRequest(string& request) {
 	vector<string> tokens;
 	tokenize(request, tokens, "\r\n");
+
 	string requestLine = tokens[0];
 
 	vector<string> headers;
-	copy(tokens.begin() + 1, tokens.end(), headers.begin());
+	for (vector<string>::iterator it = tokens.begin() + 1; it != tokens.end();
+			it++) {
+		headers.push_back(*it);
+	}
 
 	vector<string> requestLineTokens;
-	tokenize(request, requestLineTokens, " ");
+	tokenize(requestLine, requestLineTokens, " ");
 
 	assert(requestLineTokens.size() == 2 || requestLineTokens.size() == 3);
 
 	if (strcasecmp(requestLineTokens[0].c_str(), "GET") == 0) {
 		if (requestLineTokens.size() == 3) {
-			handleGetRequest(requestLineTokens[1], requestLineTokens[2], headers);
+			handleGetRequest(requestLineTokens[1], requestLineTokens[2],
+					headers);
 		} else {
 			string empty("");
 			handleGetRequest(empty, requestLineTokens[1], headers);
@@ -63,16 +68,17 @@ void HttpHandler::handleRequest(string& request) {
 
 }
 
-void HttpHandler::handleGetRequest(string& uri, string& protocol, vector<string>& headers) {
+void HttpHandler::handleGetRequest(string& uri, string& protocol,
+		vector<string>& headers) {
 
 	stringstream httpResponseBuf;
 
 	bool fileExists = fsHandler->exists(uri);
 
 	if (fileExists) {
-		httpResponseBuf << protocol << " 200 OK\r\n";
+		httpResponseBuf << "HTTP/1.0" << " 200 OK\r\n";
 	} else {
-		httpResponseBuf << protocol << " 404 Not Found\r\n";
+		httpResponseBuf << "HTTP/1.0" << " 404 Not Found\r\n";
 	}
 
 	time_t lastModDate = fsHandler->lastModified(uri);
@@ -85,41 +91,53 @@ void HttpHandler::handleGetRequest(string& uri, string& protocol, vector<string>
 	cNowDate[strlen(cNowDate) - 1] = '\0'; // remove '\n' from it
 
 	string contentType;
-	if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "html") == 0) {
+	if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "html")
+			== 0) {
 		contentType = "text/html";
-	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "txt") == 0) {
+	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "txt")
+			== 0) {
 		contentType = "text/txt";
-	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "png") == 0) {
+	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "png")
+			== 0) {
 		contentType = "image/png";
-	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "jpg") == 0) {
+	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "jpg")
+			== 0) {
 		contentType = "image/jpg";
-	}else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "jpeg") == 0) {
+	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "jpeg")
+			== 0) {
 		contentType = "image/jpg";
-	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "gif") == 0) {
+	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "gif")
+			== 0) {
 		contentType = "image/gif";
 	} else {
-		contentType = "none";
+		contentType = "none/none";
 	}
+
+	int fileSize = fsHandler->sizeOfFile(uri);
 
 	httpResponseBuf << "Date: " << string(cNowDate) << "\r\n";
 	httpResponseBuf << "Server: " << serverName << "\r\n";
 	httpResponseBuf << "Last-Modified: " << string(cLastModDate) << "\r\n";
-	httpResponseBuf << "Content-Length: " << fsHandler->sizeOfFile(uri) << "\r\n";
+	httpResponseBuf << "Content-Length: " << fileSize << "\r\n";
 	httpResponseBuf << "Content-Type: " << contentType << "\r\n";
 	httpResponseBuf << "\r\n";
 
 	if (fileExists) {
-		vector<char> dataBytes = fsHandler->ReadAllBytes(uri);
+		vector<char> dataBytes(fileSize);
+		int actuallyRead = fsHandler->ReadBytes(uri, dataBytes, fileSize);
+
+		assert(actuallyRead == fileSize);
+
 		stringstream dataStream(string(dataBytes.begin(), dataBytes.end()));
 		httpResponseBuf << dataStream.str();
 	}
 
 	string httpResponse = httpResponseBuf.str();
 	socketHandler->write((char*) httpResponse.c_str(), httpResponse.length());
+	socketHandler->closeSocket();
 }
 
-void HttpHandler::handlePostRequest(string& uri, string& protocol,
-		vector<string>& headers) {
+void HttpHandler::handlePostRequest(string& uri, string& protocol, vector<string>& headers) {
 
 }
 

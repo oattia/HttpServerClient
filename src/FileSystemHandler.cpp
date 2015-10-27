@@ -10,21 +10,18 @@ int FileSystemHandler::write(void* buffer, int len) {
 
 bool FileSystemHandler::exists(string& uri) {
 	stringstream absPath;
-	absPath << workingDir << "/" << uri;
-
+	absPath << workingDir << uri;
 	ifstream f(absPath.str().c_str());
 	bool good = f.good();
 	f.close();
-
 	struct stat attr;
 	stat(absPath.str().c_str(), &attr);
-
 	return good && (attr.st_mode & S_IFREG);
 }
 
 int FileSystemHandler::sizeOfFile(string& uri) {
 	stringstream absPath;
-	absPath << workingDir << "/" << uri;
+	absPath << workingDir << uri;
 	ifstream f(absPath.str().c_str());
 	f.seekg(0, f.end);
 	int length = f.tellg();
@@ -34,20 +31,18 @@ int FileSystemHandler::sizeOfFile(string& uri) {
 
 time_t FileSystemHandler::lastModified(string& uri) {
 	stringstream absPath;
-	absPath << workingDir << "/" << uri;
+	absPath << workingDir << uri;
 	struct stat attr;
 	stat(absPath.str().c_str(), &attr);
 	return attr.st_mtim.tv_sec;
 }
 
-vector<char> FileSystemHandler::ReadAllBytes(string& uri) {
-	ifstream f(uri, ios::binary | ios::ate);
-	ifstream::pos_type pos = f.tellg();
-	vector<char> result(pos);
-	f.seekg(0, ios::beg);
-	f.read(&result[0], pos);
-	f.close();
-	return result;
+int FileSystemHandler::ReadBytes(string& uri, vector<char>& bytes, int len) {
+	stringstream absPath;
+	absPath << workingDir << uri;
+	ifstream ifs(absPath.str().c_str(), ios::binary);
+	ifs.read(&bytes[0], len);
+	return bytes.size();
 }
 
 FileSystemHandler::~FileSystemHandler() {
