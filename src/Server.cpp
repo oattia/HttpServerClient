@@ -1,11 +1,12 @@
 #include "Server.h"
 
-Server::Server(string workingDirectory, int maxParWorkers, int maxBacklog, unsigned short port) {
+Server::Server(string workingDirectory, int maxParWorkers, int maxBacklog, unsigned short port, unsigned long connectionTimeOut) {
 	this->workingDirectory = workingDirectory;
 	this->maxParWorkers = maxParWorkers;
 	this->maxBacklog = maxBacklog;
 	this->port = port;
 	socket_fd = 0;
+	this->connectionTimeOut = connectionTimeOut;
 }
 
 Server::~Server() {
@@ -67,9 +68,11 @@ int Server::init() {
 }
 
 bool Server::canCreateNewWorker() {
+	time_t now;
+	time(&now);
 	for (vector<Thread*>::iterator it = threads.begin(); it != threads.end();) {
 		Thread* t = *it;
-		if (t->isDone()) {
+		if (t->isDone() || difftime(now, t->getCreateTs()) > connectionTimeOut) {
 			it = threads.erase(it);
 			delete t;
 		} else {
@@ -96,7 +99,7 @@ void Server::run() {
 			continue;
 		}
 
-		Thread* worker = new HttpHandler(new SocketHandler(incoming_socket_fd), new FileSystemHandler(workingDirectory));
+		Thread* worker = new HttpHandler(new SocketHandler(incoming_socket_fd), new FileSystemHandler(workingDirectory), SERVER_NAME);
 
 		if (worker->start()) {
 			threads.push_back(worker);

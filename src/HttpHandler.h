@@ -12,6 +12,7 @@
 #include <iostream>
 #include <assert.h>
 #include <algorithm>
+#include <ctime>
 
 using namespace std;
 
@@ -19,7 +20,7 @@ using namespace std;
 
 class HttpHandler: public Thread {
     public:
-		HttpHandler(SocketHandler* sh, FileSystemHandler* fsHandler);
+		HttpHandler(SocketHandler* sh, FileSystemHandler* fsHandler, string serverName);
         ~HttpHandler();
         
     protected:
@@ -28,13 +29,15 @@ class HttpHandler: public Thread {
         
      private:
         void handleRequest(string& request);
-        void handleGetRequest(string& requested, string& protocol, vector<string>& headers);
-        void handlePostRequest(string& requested, string& protocol, vector<string>& headers);
+        void handleGetRequest(string& uri, string& protocol, vector<string>& headers);
+        void handlePostRequest(string& uri, string& protocol, vector<string>& headers);
+
         template < class ContainerT >
         void tokenize(const string& str, ContainerT& tokens, const string& delimiters, bool trimEmpty = true);
 
         SocketHandler* socketHandler;
         FileSystemHandler* fsHandler;
+        string serverName;
 };
 
 #endif

@@ -11,15 +11,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <time.h>
 
 #include "HttpHandler.h"
+
+#define SERVER_NAME "CLoudServerCom/1.0.0"
 
 using namespace std;
 
 class Server {
 	public:
-		Server(string workingDirectory, int maxParWorkers, int maxBacklog, unsigned short port);
+		Server(string workingDirectory, int maxParWorkers, int maxBacklog, unsigned short port, unsigned long connectionTimeOut);
 		~Server();
 		int init();
 		void run();
@@ -31,6 +33,7 @@ class Server {
 		unsigned int maxBacklog;
 		unsigned short port;
 		string workingDirectory;
+		unsigned long connectionTimeOut;
 		bool canCreateNewWorker();
 };
 
