@@ -142,8 +142,6 @@ void HttpHandler::handlePostRequest(string& uri, string& protocol,
 		splitted.clear();
 	}
 
-	cout << contentLength << endl;
-
 	if (contentLength <= 0) {
 		string badResonse = "HTTP/1.0 400 Bad Request\r\n";
 		socketHandler->write((char*) badResonse.c_str(), badResonse.length());
