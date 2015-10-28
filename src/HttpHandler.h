@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <ctime>
-
+#include <stdlib.h>
 using namespace std;
 
 #define MAX_HTTP_REQ_LENGTH 8192
@@ -31,7 +31,8 @@ class HttpHandler: public Thread {
         void handleRequest(string& request);
         void handleGetRequest(string& uri, string& protocol, vector<string>& headers);
         void handlePostRequest(string& uri, string& protocol, vector<string>& headers);
-
+        string getContentType(string& uri);
+        string getTimeAsString(time_t t);
         template < class ContainerT >
         void tokenize(const string& str, ContainerT& tokens, const string& delimiters, bool trimEmpty = true);
 

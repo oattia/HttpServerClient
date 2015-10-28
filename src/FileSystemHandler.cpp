@@ -4,10 +4,6 @@ FileSystemHandler::FileSystemHandler(string workingDirectory) {
 	this->workingDir = workingDirectory;
 }
 
-int FileSystemHandler::write(void* buffer, int len) {
-	return 0;
-}
-
 bool FileSystemHandler::exists(string& uri) {
 	stringstream absPath;
 	absPath << workingDir << uri;
@@ -37,12 +33,22 @@ time_t FileSystemHandler::lastModified(string& uri) {
 	return attr.st_mtim.tv_sec;
 }
 
-int FileSystemHandler::ReadBytes(string& uri, vector<char>& bytes, int len) {
+int FileSystemHandler::readBytes(string& uri, void* dataBytes, int len) {
 	stringstream absPath;
 	absPath << workingDir << uri;
-	ifstream ifs(absPath.str().c_str(), ios::binary);
-	ifs.read(&bytes[0], len);
-	return bytes.size();
+	FILE* fp = fopen(absPath.str().c_str(), "rb");
+	int actuallyRead = fread(dataBytes, 1, len, fp);
+	fclose(fp);
+	return actuallyRead;
+}
+
+int FileSystemHandler::writeBytes(string& uri, void* dataBytes, int len) {
+	stringstream absPath;
+	absPath << workingDir << uri;
+	FILE* fp = fopen(absPath.str().c_str(), "wb+");
+	int actuallyRead = fwrite(dataBytes, 1, len, fp);
+	fclose(fp);
+	return actuallyRead;
 }
 
 FileSystemHandler::~FileSystemHandler() {

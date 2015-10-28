@@ -68,28 +68,35 @@ void HttpHandler::handleRequest(string& request) {
 
 }
 
-void HttpHandler::handleGetRequest(string& uri, string& protocol,
-		vector<string>& headers) {
-
+void HttpHandler::handleGetRequest(string& uri, string& protocol, vector<string>& headers) {
 	stringstream httpResponseBuf;
 
 	bool fileExists = fsHandler->exists(uri);
+	int fileSize = fsHandler->sizeOfFile(uri);
 
-	if (fileExists) {
-		httpResponseBuf << "HTTP/1.0" << " 200 OK\r\n";
-	} else {
-		httpResponseBuf << "HTTP/1.0" << " 404 Not Found\r\n";
-	}
-
-	time_t lastModDate = fsHandler->lastModified(uri);
-	char* cLastModDate = ctime(&lastModDate);
-	cLastModDate[strlen(cLastModDate) - 1] = '\0'; // remove '\n' from it
+	httpResponseBuf << "HTTP/1.0 " << (fileExists ? "200 OK" : "404 Not Found") << "\r\n";
 
 	time_t now;
 	time(&now);
-	char* cNowDate = ctime(&now);
-	cNowDate[strlen(cNowDate) - 1] = '\0'; // remove '\n' from it
+	httpResponseBuf << "Date: " << getTimeAsString(now) << "\r\n";
+	httpResponseBuf << "Server: " << serverName << "\r\n";
+	httpResponseBuf << "Last-Modified: " << getTimeAsString(fsHandler->lastModified(uri)) << "\r\n";
+	httpResponseBuf << "Content-Length: " << fileSize << "\r\n";
+	httpResponseBuf << "Content-Type: " << getContentType(uri) << "\r\n";
+	httpResponseBuf << "\r\n";
 
+	if (fileExists) {
+		char* dataBytes = new char[fileSize];
+		fsHandler->readBytes(uri, dataBytes, fileSize);
+		httpResponseBuf.write(dataBytes, fileSize);
+		delete dataBytes;
+	}
+
+	string httpResponse = httpResponseBuf.str();
+	socketHandler->write((char*) httpResponse.c_str(), httpResponse.length());
+}
+
+string HttpHandler::getContentType(string& uri) {
 	string contentType;
 	if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "html")
 			== 0) {
@@ -112,33 +119,48 @@ void HttpHandler::handleGetRequest(string& uri, string& protocol,
 	} else {
 		contentType = "none/none";
 	}
+	return contentType;
 
-	int fileSize = fsHandler->sizeOfFile(uri);
-
-	httpResponseBuf << "Date: " << string(cNowDate) << "\r\n";
-	httpResponseBuf << "Server: " << serverName << "\r\n";
-	httpResponseBuf << "Last-Modified: " << string(cLastModDate) << "\r\n";
-	httpResponseBuf << "Content-Length: " << fileSize << "\r\n";
-	httpResponseBuf << "Content-Type: " << contentType << "\r\n";
-	httpResponseBuf << "\r\n";
-
-	if (fileExists) {
-		vector<char> dataBytes(fileSize);
-		int actuallyRead = fsHandler->ReadBytes(uri, dataBytes, fileSize);
-
-		assert(actuallyRead == fileSize);
-
-		stringstream dataStream(string(dataBytes.begin(), dataBytes.end()));
-		httpResponseBuf << dataStream.str();
-	}
-
-	string httpResponse = httpResponseBuf.str();
-	socketHandler->write((char*) httpResponse.c_str(), httpResponse.length());
-	socketHandler->closeSocket();
 }
 
-void HttpHandler::handlePostRequest(string& uri, string& protocol, vector<string>& headers) {
+string HttpHandler::getTimeAsString(time_t t) {
+	char* cDate = ctime(&t);
+	cDate[strlen(cDate) - 1] = '\0'; // remove '\n' from it
+	return string(cDate);
+}
 
+void HttpHandler::handlePostRequest(string& uri, string& protocol,
+		vector<string>& headers) {
+	int contentLength = 0;
+	for (vector<string>::iterator it = headers.begin(); it != headers.end(); it++) {
+		vector<string> splitted;
+		tokenize(*it, splitted, ": ");
+		cout << *it << endl;
+		if (splitted[0] == "Content-Length") {
+			contentLength = atoi(splitted[1].c_str());
+		}
+		splitted.clear();
+	}
+
+	cout << contentLength << endl;
+
+	if (contentLength <= 0) {
+		string badResonse = "HTTP/1.0 400 Bad Request\r\n";
+		socketHandler->write((char*) badResonse.c_str(), badResonse.length());
+		return;
+	}
+
+	char* dataBuffer = new char[contentLength];
+	memset(dataBuffer, 0, contentLength);
+
+	string okResonse = "HTTP/1.0 200 OK\r\n";
+	socketHandler->write((char*) okResonse.c_str(), okResonse.length());
+
+	socketHandler->read(dataBuffer, contentLength);
+
+	fsHandler->writeBytes(uri, dataBuffer, contentLength);
+
+	delete dataBuffer;
 }
 
 template<class ContainerT>

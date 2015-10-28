@@ -18,9 +18,9 @@ public:
 	bool exists(string& uri);
 	int sizeOfFile(string& uri);
 	time_t lastModified(string& uri);
-	int ReadBytes(string& uri, vector<char>& bytes, int len);
 
-	int write(void* buffer, int len);
+	int readBytes(string& uri, void* dataBytes, int len);
+	int writeBytes(string& uri, void* dataBytes, int len);
 
 private:
 	string workingDir;
