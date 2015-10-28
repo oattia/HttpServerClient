@@ -46,9 +46,9 @@ int FileSystemHandler::writeBytes(string& uri, void* dataBytes, int len) {
 	stringstream absPath;
 	absPath << workingDir << uri;
 	FILE* fp = fopen(absPath.str().c_str(), "wb+");
-	int actuallyRead = fwrite(dataBytes, 1, len, fp);
+	int actuallywritten = fwrite(dataBytes, 1, len, fp);
 	fclose(fp);
-	return actuallyRead;
+	return actuallywritten;
 }
 
 FileSystemHandler::~FileSystemHandler() {

@@ -1,6 +1,7 @@
 #include "Server.h"
 
-Server::Server(string workingDirectory, int maxParWorkers, int maxBacklog, unsigned short port, unsigned long connectionTimeOut) {
+Server::Server(string workingDirectory, int maxParWorkers, int maxBacklog,
+		unsigned short port, unsigned long connectionTimeOut) {
 	this->workingDirectory = workingDirectory;
 	this->maxParWorkers = maxParWorkers;
 	this->maxBacklog = maxBacklog;
@@ -64,7 +65,27 @@ int Server::init() {
 		perror("listen");
 		exit(1);
 	}
+	printWelcome();
 	return 0;
+}
+
+void Server::printWelcome() {
+	printf(
+			"\n\n\n ██████╗██╗      ██████╗ ██╗   ██╗██████╗       ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗        ██████╗ ██████╗ ███╗   ███╗\n");
+	printf(
+			"██╔════╝██║     ██╔═══██╗██║   ██║██╔══██╗      ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗      ██╔════╝██╔═══██╗████╗ ████║\n");
+	printf(
+			"██║     ██║     ██║   ██║██║   ██║██║  ██║█████╗███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝█████╗██║     ██║   ██║██╔████╔██║\n");
+	printf(
+			"██║     ██║     ██║   ██║██║   ██║██║  ██║╚════╝╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗╚════╝██║     ██║   ██║██║╚██╔╝██║\n");
+	printf(
+			"╚██████╗███████╗╚██████╔╝╚██████╔╝██████╔╝      ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║      ╚██████╗╚██████╔╝██║ ╚═╝ ██║\n");
+	printf(
+			"╚═════╝╚══════╝ ╚═════╝  ╚═════╝ ╚═════╝       ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝       ╚═════╝ ╚═════╝ ╚═╝     ╚═╝\n");
+	printf("\n\n*************************************************************************\n");
+	printf("|       Welcome to Cloud-Server-Com HTTP server v1.0.0                  |\n");
+	printf("|       The server is now ready to accept connections ...               |\n");
+	printf("*************************************************************************\n\n");
 }
 
 bool Server::canCreateNewWorker() {
@@ -72,7 +93,8 @@ bool Server::canCreateNewWorker() {
 	time(&now);
 	for (vector<Thread*>::iterator it = threads.begin(); it != threads.end();) {
 		Thread* t = *it;
-		if (t->isDone() || difftime(now, t->getCreateTs()) > connectionTimeOut) {
+		if (t->isDone()
+				|| difftime(now, t->getCreateTs()) > connectionTimeOut) {
 			it = threads.erase(it);
 			delete t;
 		} else {
@@ -99,7 +121,8 @@ void Server::run() {
 			continue;
 		}
 
-		Thread* worker = new HttpHandler(new SocketHandler(incoming_socket_fd), new FileSystemHandler(workingDirectory), SERVER_NAME);
+		Thread* worker = new HttpHandler(new SocketHandler(incoming_socket_fd),
+				new FileSystemHandler(workingDirectory), SERVER_NAME);
 
 		if (worker->start()) {
 			threads.push_back(worker);

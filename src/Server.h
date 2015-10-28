@@ -35,6 +35,7 @@ class Server {
 		string workingDirectory;
 		unsigned long connectionTimeOut;
 		bool canCreateNewWorker();
+		void printWelcome();
 };
 
 #endif

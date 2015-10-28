@@ -5,7 +5,7 @@ using namespace std;
 
 #define MAX_PAR_WORKERS		10
 #define MAX_BACKLOG			10
-#define PORT				3490
+#define PORT				8080
 #define WORKING_DIRECTORY   "."
 #define CONNECTION_TIME_OUT 20
 

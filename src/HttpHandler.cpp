@@ -44,8 +44,6 @@ void HttpHandler::handleRequest(string& request) {
 	vector<string> requestLineTokens;
 	tokenize(requestLine, requestLineTokens, " ");
 
-	assert(requestLineTokens.size() == 2 || requestLineTokens.size() == 3);
-
 	if (strcasecmp(requestLineTokens[0].c_str(), "GET") == 0) {
 		if (requestLineTokens.size() == 3) {
 			handleGetRequest(requestLineTokens[1], requestLineTokens[2],
@@ -93,7 +91,7 @@ void HttpHandler::handleGetRequest(string& uri, string& protocol, vector<string>
 	}
 
 	string httpResponse = httpResponseBuf.str();
-	socketHandler->write((char*) httpResponse.c_str(), httpResponse.length());
+	socketHandler->writeExactSize((char*) httpResponse.c_str(), httpResponse.length());
 }
 
 string HttpHandler::getContentType(string& uri) {
@@ -104,7 +102,13 @@ string HttpHandler::getContentType(string& uri) {
 	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "txt")
 			== 0) {
 		contentType = "text/txt";
-	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "png")
+	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "css")
+			== 0) {
+		contentType = "text/css";
+	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "js")
+			== 0) {
+		contentType = "text/javascript";
+	}else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "png")
 			== 0) {
 		contentType = "image/png";
 	} else if (strcasecmp(uri.substr(uri.find_last_of(".") + 1).c_str(), "jpg")
@@ -144,7 +148,7 @@ void HttpHandler::handlePostRequest(string& uri, string& protocol,
 
 	if (contentLength <= 0) {
 		string badResonse = "HTTP/1.0 400 Bad Request\r\n";
-		socketHandler->write((char*) badResonse.c_str(), badResonse.length());
+		socketHandler->writeExactSize((char*) badResonse.c_str(), badResonse.length());
 		return;
 	}
 
@@ -152,9 +156,9 @@ void HttpHandler::handlePostRequest(string& uri, string& protocol,
 	memset(dataBuffer, 0, contentLength);
 
 	string okResonse = "HTTP/1.0 200 OK\r\n";
-	socketHandler->write((char*) okResonse.c_str(), okResonse.length());
+	socketHandler->writeExactSize((char*) okResonse.c_str(), okResonse.length());
 
-	socketHandler->read(dataBuffer, contentLength);
+	socketHandler->readExactSize(dataBuffer, contentLength);
 
 	fsHandler->writeBytes(uri, dataBuffer, contentLength);
 
